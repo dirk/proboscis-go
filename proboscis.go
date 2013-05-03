@@ -1,5 +1,19 @@
 package proboscis
 
+import (
+  "io"
+  "bufio"
+  "strconv"
+  "fmt"
+)
+
+var period_byte byte = byte('.')
+var colon_byte  byte = byte(':')
+var period_byte_slice []byte = []byte{period_byte}
+var colon_byte_slice  []byte = []byte{colon_byte}
+
+var ValidTypes []string = []string{"text", "json", "proto", "thrift"}
+
 type Request struct {
   Method string
   Format string
@@ -16,11 +30,9 @@ type Response struct {
 
 func NewRequest() *Request {
   var req *Request
-  req = &Request{"", "", 0, []byte{}}
+  req = &Request{"", "", 0, make([]byte, 0)}
   return req
 }
-func (req *Request) MakeResonse() *Response {
-  rep := NewResponse()
 func EncodeRequest(req *Request, w io.Writer) error {
   w.Write([]byte(req.Method))
   w.Write(period_byte_slice)
@@ -62,13 +74,21 @@ func DecodeRequest(r bufio.Reader) (*Request, error) {
   req.Data   = data
   return req, nil
 }
+
+
+func (req *Request) MakeResponse() *Response {
+  var rep *Response
+  rep = NewResponse()
   rep.Status = "200"
   rep.Format = req.Format
   return rep
 }
+func (req *Request) Encode(w io.Writer) error {
+  return EncodeRequest(req, w)
+}
 
 func NewResponse() *Response {
   var rep *Response
-  rep = &Response{"", "", 0, []byte{}}
+  rep = &Response{"", "", 0, make([]byte, 0)}
   return rep
 }
