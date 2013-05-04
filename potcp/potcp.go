@@ -2,6 +2,7 @@ package potcp
 
 import (
   "proboscis-go"
+  "net"
 )
 
 type HandlerFunction func(*proboscis.Request) *proboscis.Response
@@ -21,12 +22,16 @@ func NewServer() *Server {
   server = &Server{make(map[string]*Handler)}
   return server
 }
-
-func (server *Server) Register(handler *Handler) {
-  server.Handlers[handler.Method] = handler
-}
 func NewHandler(method string, format string, hf HandlerFunction) *Handler {
   var handler *Handler
   handler = &Handler{method, format, hf}
   return handler
+}
+
+
+func (server *Server) Register(handler *Handler) {
+  server.Handlers[handler.Method] = handler
+}
+func (server *Server) ServeConn(conn net.Conn) {
+  // FIXME: Make this work
 }
