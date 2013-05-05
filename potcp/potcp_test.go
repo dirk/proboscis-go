@@ -26,6 +26,7 @@ func SetupServer() *Server {
 
 func TestClientServer(t *testing.T) {
   events := make(chan string, 1)
+  var event string
   
   addr := "localhost:9999"
   
@@ -39,6 +40,7 @@ func TestClientServer(t *testing.T) {
     if err != nil { panic(err) }
     
     fmt.Println("INFO TestClientServer/Server accepting...")
+    events <- "Server accepting"
     
     conn, err := listener.Accept()
     if err != nil { panic(err) }
@@ -46,8 +48,15 @@ func TestClientServer(t *testing.T) {
     server.ServeConn(conn)
     conn.Close()
     
-    // events <- "Server done"
+    events <- "Server done"
   }()
+  
+  event = <- events
+  if event != "Server accepting" {
+    fmt.Printf("INFO TestClientServer/event: %s\n", event)
+    t.Fatal("Unexpected event: %s", event)
+    return
+  }
   
   // Client stuff
   go func() {
@@ -57,10 +66,15 @@ func TestClientServer(t *testing.T) {
     var client *Client
     client = NewClient(conn)
     
+    var rep *proboscis.Response
+    // var req *proboscis.Request
     
-  }
+    fmt.Println("INFO TestClientServer/client.CallString...")
+    rep, err = client.CallString("echo", "text", "Hello world!")
+    
+    fmt.Println(rep)
+  }()
   
-  var event string
   event = <- events
   fmt.Printf("INFO TestClientServer/event: %s\n", event)
   

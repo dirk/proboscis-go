@@ -9,14 +9,14 @@ var ValidTypes []string = []string{"text", "json", "proto", "thrift"}
 type Request struct {
   Method string
   Format string
-  Length uint32
+  Length int
   Data   []byte
 }
 
 type Response struct {
   Status string
   Format string
-  Length uint32
+  Length int
   Data   []byte
 }
 
