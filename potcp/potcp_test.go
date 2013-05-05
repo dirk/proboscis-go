@@ -62,6 +62,7 @@ func TestClientServer(t *testing.T) {
   go func() {
     conn, err := net.Dial("tcp", addr)
     if err != nil { panic(err) }
+    defer conn.Close()
     
     var client *Client
     client = NewClient(conn)
@@ -70,10 +71,33 @@ func TestClientServer(t *testing.T) {
     // var req *proboscis.Request
     
     fmt.Println("INFO TestClientServer/client.CallString...")
-    rep, err = client.CallString("echo", "text", "Hello world!")
+    message := "Hello world!"
+    rep, err = client.CallString("echo", "text", message)
     
-    fmt.Println(rep)
+    // fmt.Printf("rep: %#v\n", rep)
+    // fmt.Printf("err: %#v\n", err)
+    
+    if err != nil {
+      t.Fatal("Error: %s", err)
+      events <- "Client error"
+      return
+    }
+    if rep.Status != "200" {
+      t.Fatal("Status not 200 (%q)", rep.Status)
+      events <- "Client error"
+      return
+    }
+    if string(rep.Data) != message {
+      t.Fatal(
+        "Messages don't match (%q != %q)", message, string(rep.Data),
+      )
+    }
+    
+    events <- "Client done"
   }()
+  
+  event = <- events
+  fmt.Printf("INFO TestClientServer/event: %s\n", event)
   
   event = <- events
   fmt.Printf("INFO TestClientServer/event: %s\n", event)

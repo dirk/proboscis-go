@@ -16,7 +16,6 @@ type Handler struct {
 
 type Server struct {
   Handlers map[string]*Handler
-  Conn     net.Conn
 }
 
 type Client struct {
@@ -25,7 +24,7 @@ type Client struct {
 
 func NewServer() *Server {
   var server *Server
-  server = &Server{make(map[string]*Handler), nil}
+  server = &Server{make(map[string]*Handler)}
   return server
 }
 func NewHandler(method string, format string, hf HandlerFunction) *Handler {
@@ -42,19 +41,50 @@ func NewClient(conn net.Conn) *Client {
 // SERVER ---------------------------------------------------------------------
 
 func (server *Server) Register(handler *Handler) {
-  server.Handlers[handler.Method] = handler
+  server.Handlers[handler.Method+"."+handler.Format] = handler
 }
-func (server *Server) ServeConn(conn net.Conn) {
-  server.Conn = conn
-  // FIXME: Make this work
-  
+func (server *Server) ServeConn(conn net.Conn) error {
   var req *proboscis.Request
+  var rep *proboscis.Response = nil
   var err error
   
   req, err = DecodeRequest(conn)
+  if err != nil {
+    // TODO: Maybe send a response here?
+    return err
+  }
   
-  fmt.Printf("req: %#v\n", req)
-  fmt.Printf("err: %#v\n", err)
+  // fmt.Printf("req: %#v\n", req)
+  // fmt.Printf("err: %#v\n", err)
+  
+  var handler *Handler
+  handler = server.Handlers[req.Method+"."+req.Format]
+  
+  if handler == nil {
+    rep = CreateMethodNotFoundResponse(req)
+  } else {
+    rep = handler.Function(req)
+  }
+  
+  // fmt.Printf("rep: %#v\n", rep)
+  
+  err = EncodeResponse(rep, conn)
+  if err != nil {
+    // TODO: And also maybe here?
+    return err
+  }
+  
+  return conn.Close()
+}
+
+func CreateMethodNotFoundResponse(req *proboscis.Request) *proboscis.Response {
+  var rep *proboscis.Response
+  rep = proboscis.NewResponse()
+  rep.Status = "404"
+  rep.Format = "text"
+  data_string := fmt.Sprintf("Method %s.%s not found", req.Method, req.Format)
+  rep.Data = []byte(data_string)
+  return rep
 }
 
 // CLIENT ---------------------------------------------------------------------
@@ -62,7 +92,11 @@ func (server *Server) ServeConn(conn net.Conn) {
 func (client *Client) CallRequest(req *proboscis.Request) (*proboscis.Response, error) {
   EncodeRequest(req, client.Conn)
   
-  return nil, nil
+  var rep *proboscis.Response
+  var err error
+  rep, err = DecodeResponse(client.Conn)
+  
+  return rep, err
 }
 
 func (client *Client) CallString(method, format, data string) (*proboscis.Response, error) {
