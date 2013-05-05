@@ -2,12 +2,12 @@ package potcp
 
 import (
   "testing"
-  // "fmt"
+  "fmt"
   "proboscis-go"
   "net"
 )
 
-func TestClientServer(t *testing.T) {
+func SetupServer() *Server {
   var handler_function HandlerFunction
   handler_function = func(req *proboscis.Request) *proboscis.Response {
     res := req.MakeResponse()
@@ -15,22 +15,55 @@ func TestClientServer(t *testing.T) {
     res.Data = req.Data
     return res
   }
-  
   var server *Server
   server = NewServer()
-  
   var handler *Handler
   handler = NewHandler("echo", "text", handler_function)
   
   server.Register(handler)
+  return server
+}
+
+func TestClientServer(t *testing.T) {
+  events := make(chan string, 1)
   
-  listener, err := net.Listen("tcp", "localhost:9999")
-  defer listener.Close()
-  if err != nil { panic(err) }
-  conn, err := listener.Accept()
-  if err != nil { panic(err) }
+  addr := "localhost:9999"
   
-  server.ServeConn(conn)
+  // Server stuff
+  go func() {
+    var server *Server
+    server = SetupServer()
+    
+    listener, err := net.Listen("tcp", addr)
+    defer listener.Close()
+    if err != nil { panic(err) }
+    
+    fmt.Println("INFO TestClientServer/Server accepting...")
+    
+    conn, err := listener.Accept()
+    if err != nil { panic(err) }
+    
+    server.ServeConn(conn)
+    conn.Close()
+    
+    // events <- "Server done"
+  }()
+  
+  // Client stuff
+  go func() {
+    conn, err := net.Dial("tcp", addr)
+    if err != nil { panic(err) }
+    
+    var client *Client
+    client = NewClient(conn)
+    
+    
+  }
+  
+  var event string
+  event = <- events
+  fmt.Printf("INFO TestClientServer/event: %s\n", event)
+  
 }
 
 func TestHandlerRegistration(t *testing.T) {
