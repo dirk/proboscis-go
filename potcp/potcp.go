@@ -15,11 +15,16 @@ type Handler struct {
 
 type Server struct {
   Handlers map[string]*Handler
+  Conn     net.Conn
+}
+
+type Client struct {
+  Conn net.Conn
 }
 
 func NewServer() *Server {
   var server *Server
-  server = &Server{make(map[string]*Handler)}
+  server = &Server{make(map[string]*Handler), nil}
   return server
 }
 func NewHandler(method string, format string, hf HandlerFunction) *Handler {
@@ -28,10 +33,12 @@ func NewHandler(method string, format string, hf HandlerFunction) *Handler {
   return handler
 }
 
+// SERVER ---------------------------------------------------------------------
 
 func (server *Server) Register(handler *Handler) {
   server.Handlers[handler.Method] = handler
 }
 func (server *Server) ServeConn(conn net.Conn) {
+  server.Conn = conn
   // FIXME: Make this work
 }
