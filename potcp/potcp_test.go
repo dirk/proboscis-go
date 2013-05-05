@@ -39,7 +39,7 @@ func TestClientServer(t *testing.T) {
     defer listener.Close()
     if err != nil { panic(err) }
     
-    fmt.Println("INFO TestClientServer/Server accepting...")
+    fmt.Println("INFO TestClientServer/Server accepting")
     events <- "Server accepting"
     
     conn, err := listener.Accept()
@@ -70,7 +70,7 @@ func TestClientServer(t *testing.T) {
     var rep *proboscis.Response
     // var req *proboscis.Request
     
-    fmt.Println("INFO TestClientServer/client.CallString...")
+    fmt.Println("INFO TestClientServer/client.CallString")
     message := "Hello world!"
     rep, err = client.CallString("echo", "text", message)
     
@@ -102,6 +102,7 @@ func TestClientServer(t *testing.T) {
   event = <- events
   fmt.Printf("INFO TestClientServer/event: %s\n", event)
   
+  fmt.Println("PASS TestClientServer")
 }
 
 func TestHandlerRegistration(t *testing.T) {
